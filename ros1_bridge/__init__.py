@@ -84,6 +84,8 @@ def generate_cpp(output_path, template_dir):
     data.update(generate_actions(
         rospack, message_string_pairs=message_string_pairs))
 
+    print(data['actions'])
+
     template_file = os.path.join(template_dir, 'get_mappings.cpp.em')
     output_file = os.path.join(output_path, 'get_mappings.cpp')
     data_for_template = {
