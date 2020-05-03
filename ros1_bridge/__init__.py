@@ -264,7 +264,6 @@ def generate_actions(rospack=None, message_string_pairs=None):
 
     actions = determine_common_actions(
         ros1_actions, ros2_actions, mapping_rules, message_string_pairs=message_string_pairs)
-
     return {
         'actions': actions,
         'ros2_package_names_actions': ros2_pkgs,
