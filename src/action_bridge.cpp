@@ -25,7 +25,6 @@
 #endif
 
 // include ROS 2
-#include "rclcpp/rclcpp.hpp"
 
 #include "ros1_bridge/bridge.hpp"
 
