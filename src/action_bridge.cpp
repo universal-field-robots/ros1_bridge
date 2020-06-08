@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 {
   if(argc != 5)
   {
-    fprintf("Wrong number of arguments passed.\n");
+    fprintf(stderr, "Wrong number of arguments passed.\n");
     return -1;
   }
 
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
   auto ros2_node = rclcpp::Node::make_shared("ros_bridge");
 
   std::string dir = argv[1];
-  std::string package = argv[2];
+  std::string pkg = argv[2];
   std::string type = argv[3];
   std::string name = argv[4];
 
