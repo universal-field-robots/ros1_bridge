@@ -72,8 +72,8 @@ public:
                                                std::bind(&ActionFactory_1_2::goal_cb, this, std::placeholders::_1),
                                                std::bind(&ActionFactory_1_2::cancel_cb, this, std::placeholders::_1),
                                                false);
-        server_->start();
         client_ = rclcpp_action::create_client<ROS2_T>(ros2_node, action_name);
+        server_->start();
     }
 
     void cancel_cb(ROS1GoalHandle gh1)

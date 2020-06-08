@@ -39,33 +39,36 @@ int main(int argc, char *argv[])
   rclcpp::init(argc, argv);
   auto ros2_node = rclcpp::Node::make_shared("ros_bridge");
 
-  std::string dir = argv[1];
-  std::string package = argv[2];
-  std::string type = argv[3];
-  std::string name = argv[4];
+  std::string dir, pkg, type, name;
 
-  std::cout << dir << " " << package << " " << type << " " << name << std::endl;
-
-  //ros1 example_tutorials Fibonacci fibonacci
+  ros2_node->get_parameter("dir", dir);
+  ros2_node->get_parameter("pkg", pkg);
+  ros2_node->get_parameter("type", type);
+  ros2_node->get_parameter("name", name);
+  // std::string dir = argv[1];
+  // std::string package = argv[2];
+  // std::string type = argv[3];
+  // std::string name = argv[4];
 
   auto factory = ros1_bridge::get_action_factory(
-      dir, package, type);
+      dir, pkg, type);
   if (factory)
   {
     printf("created action factory");
     try
     {
       factory->create_server_client(ros1_node, ros2_node, name);
-      // printf("Created 2 to 1 bridge for service %s\n", name.data());
     }
     catch (std::runtime_error &e)
     {
       fprintf(stderr, "Failed to created a bridge: %s\n", e.what());
+      return -1;
     }
   }
   else
   {
     fprintf(stderr, "Failed to create a factory\n");
+    return -1;
   }
 
   // ROS 1 asynchronous spinner
