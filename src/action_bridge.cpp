@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
   std::string dir, pkg, type, name;
 
-  ros2_node->get_parameter("dir", dir);
+  ros2_node->get_parameter("direction", dir);
   ros2_node->get_parameter("pkg", pkg);
   ros2_node->get_parameter("type", type);
   ros2_node->get_parameter("name", name);
@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
   // std::string package = argv[2];
   // std::string type = argv[3];
   // std::string name = argv[4];
+  std::cout << dir << " " << pkg << " " << type << " " << name << std::endl;
 
   auto factory = ros1_bridge::get_action_factory(
       dir, pkg, type);
