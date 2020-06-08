@@ -31,6 +31,12 @@
 
 int main(int argc, char *argv[])
 {
+  if(argc != 5)
+  {
+    fprintf("Wrong number of arguments passed.\n");
+    return -1;
+  }
+
   // ROS 1 node
   ros::init(argc, argv, "ros_bridge");
   ros::NodeHandle ros1_node;
@@ -39,17 +45,10 @@ int main(int argc, char *argv[])
   rclcpp::init(argc, argv);
   auto ros2_node = rclcpp::Node::make_shared("ros_bridge");
 
-  std::string dir, pkg, type, name;
-
-  ros2_node->get_parameter("direction", dir);
-  ros2_node->get_parameter("pkg", pkg);
-  ros2_node->get_parameter("type", type);
-  ros2_node->get_parameter("name", name);
-  // std::string dir = argv[1];
-  // std::string package = argv[2];
-  // std::string type = argv[3];
-  // std::string name = argv[4];
-  std::cout << dir << " " << pkg << " " << type << " " << name << std::endl;
+  std::string dir = argv[1];
+  std::string package = argv[2];
+  std::string type = argv[3];
+  std::string name = argv[4];
 
   auto factory = ros1_bridge::get_action_factory(
       dir, pkg, type);
