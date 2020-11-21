@@ -19,6 +19,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <boost/algorithm/string/predicate.hpp>
 
 // include ROS 1
 #ifdef __clang__
@@ -39,6 +40,7 @@
 #include "rclcpp/scope_exit.hpp"
 
 #include "ros1_bridge/bridge.hpp"
+#include "ros1_bridge/action_factory.hpp"
 
 
 std::mutex g_bridge_mutex;
@@ -461,6 +463,111 @@ void get_ros1_service_info(
   ros1_services[key]["name"] = std::string(t.begin() + t.find("/") + 1, t.end());
 }
 
+inline bool is_action_topic(std::map<std::string, std::string> &actions,
+                               std::map<std::string, uint8_t> &action_nums,
+                               const std::string topic_name, const std::string topic_name_ends_with,
+                               const std::string type, const std::string type_ends_with) {
+    // check if the topic name and topic types are as expected
+    if (boost::algorithm::ends_with(topic_name.c_str(), topic_name_ends_with.c_str()) &&
+        boost::algorithm::ends_with(type.c_str(), type_ends_with.c_str())) {
+        // extract action name from topic name
+        std::string name = topic_name.substr(0, topic_name.find(topic_name_ends_with.c_str()));
+        if (actions.find(name) == actions.end()) {
+            actions[name] = "";
+            action_nums[name] = 0;
+        }
+
+        // e.g.: topic type of '/fibonacci/goal' is 'actionlib_tutorials/FibonacciActionGoal'
+        // Thus, action type is 'actionlib_tutorials/Fibonacci'
+        std::string action_type = type.substr(0, type.find(type_ends_with.c_str()));
+        actions[name] = topic_name_ends_with.compare("/goal") ? actions[name] : action_type;
+        action_nums[name] += 1;
+        return true;
+    }
+    return false;
+}
+
+// if topics 'goal' with type 'ActionGoal' and 'cancel' with type 'GoalID' are pubs, then it is an
+// action client
+// equivalent ROS2 action pkg and type can be retrieved from get_mappings.cpp
+void get_active_ros1_actions(std::map<std::string, std::string> publishers,
+                             std::map<std::string, std::string> subscribers,
+                             std::map<std::string, std::string> &active_ros1_action_servers,
+                             std::map<std::string, std::string> &active_ros1_action_clients) {
+    // check if the topics end with 'goal', 'result', 'cancel', 'status'
+
+    // find topics that end with goal and cancel, find corresponding result, status and feedback
+    // in the other map
+    std::map<std::string, std::string>::iterator it;
+    std::map<std::string, uint8_t>::iterator it_num;
+    // store count of pubs and subs for each action
+    std::map<std::string, uint8_t> action_server_nums, action_client_nums;
+
+    for (it = publishers.begin(); it != publishers.end(); it++) {
+        // check for action client
+        if (!is_action_topic(active_ros1_action_clients, action_client_nums, it->first.c_str(),
+                             "/cancel", it->second.c_str(), "/GoalID")) {
+            continue;
+        }
+        if (!is_action_topic(active_ros1_action_clients, action_client_nums, it->first.c_str(),
+                             "/goal", it->second.c_str(), "ActionGoal")) {
+            continue;
+        }
+
+        // check for action server
+        if (!is_action_topic(active_ros1_action_servers, action_server_nums, it->first.c_str(),
+                             "/feedback", it->second.c_str(), "ActionFeedback")) {
+            continue;
+        }
+        if (!is_action_topic(active_ros1_action_servers, action_server_nums, it->first.c_str(),
+                             "/result", it->second.c_str(), "ActionResult")) {
+            continue;
+        }
+        if (!is_action_topic(active_ros1_action_servers, action_server_nums, it->first.c_str(),
+                             "/status", it->second.c_str(), "GoalStatusArray")) {
+            continue;
+        }
+    }
+
+    // subscribers do not report their types, but use it to confirm action
+    for (it = subscribers.begin(); it != subscribers.end(); it++) {
+        // check for action server
+        if (!is_action_topic(active_ros1_action_servers, action_server_nums, it->first.c_str(),
+                             "/cancel", it->second.c_str(), "")) {
+            continue;
+        }
+        if (!is_action_topic(active_ros1_action_servers, action_server_nums, it->first.c_str(),
+                             "/goal", it->second.c_str(), "")) {
+            continue;
+        }
+
+        // check for action client
+        if (!is_action_topic(active_ros1_action_clients, action_client_nums, it->first.c_str(),
+                             "/feedback", it->second.c_str(), "")) {
+            continue;
+        }
+        if (!is_action_topic(active_ros1_action_clients, action_client_nums, it->first.c_str(),
+                             "/result", it->second.c_str(), "")) {
+            continue;
+        }
+        if (!is_action_topic(active_ros1_action_clients, action_client_nums, it->first.c_str(),
+                             "/status", it->second.c_str(), "")) {
+            continue;
+        }
+    }
+
+    for (it_num = action_client_nums.begin(); it_num != action_client_nums.end(); it_num++) {
+        if (it_num->second != 5) {
+            active_ros1_action_clients.erase(it_num->first);
+        }
+    }
+    for (it_num = action_server_nums.begin(); it_num != action_server_nums.end(); it_num++) {
+        if (it_num->second != 5) {
+            active_ros1_action_servers.erase(it_num->first);
+        }
+    }
+}
+
 int main(int argc, char * argv[])
 {
   bool output_topic_introspection;
@@ -603,6 +710,11 @@ int main(int argc, char * argv[])
           }
         }
       }
+
+      // check actions
+      std::map<std::string, std::string> active_ros1_action_servers, active_ros1_action_clients;
+      get_active_ros1_actions(current_ros1_publishers, current_ros1_subscribers,
+                              active_ros1_action_servers, active_ros1_action_clients);
 
       if (output_topic_introspection) {
         printf("\n");
