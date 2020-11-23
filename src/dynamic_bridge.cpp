@@ -565,6 +565,56 @@ void get_active_ros1_actions(std::map<std::string, std::string> publishers,
     }
 }
 
+// how does ros2 action list determine active interfaces?
+// ref: opt/ros/foxy/lib/python3.8/site-packages/ros2action/verb/list.py
+// https://github.com/ros2/rcl/blob/master/rcl_action/src/rcl_action/graph.c
+void get_active_ros2_actions(const std::map<std::string, std::string> active_ros2_publishers,
+                             const std::map<std::string, std::string> active_ros2_subscribers,
+                             std::map<std::string, std::string> &active_ros2_action_servers,
+                             std::map<std::string, std::string> &active_ros2_action_clients) {
+    std::map<std::string, std::string>::const_iterator it;
+    std::map<std::string, uint8_t>::iterator it_num;
+    std::map<std::string, uint8_t> action_server_nums, action_client_nums;
+    for (it = active_ros2_publishers.begin(); it != active_ros2_publishers.end(); it++) {
+        if (is_action_topic(active_ros2_action_servers, action_server_nums, true, it->first.c_str(),
+                            "/_action/feedback", it->second.c_str(), "_FeedbackMessage")) {
+            continue;
+        } else if (is_action_topic(active_ros2_action_servers, action_server_nums, false,
+                                   it->first.c_str(), "/_action/status", it->second.c_str(),
+                                   "GoalStatusArray")) {
+            continue;
+        }
+    }
+    for (it = active_ros2_subscribers.begin(); it != active_ros2_subscribers.end(); it++) {
+        if (is_action_topic(active_ros2_action_clients, action_client_nums, true,
+                             it->first.c_str(), "/_action/feedback", it->second.c_str(),
+                             "_FeedbackMessage")) {
+            continue;
+        } else if (is_action_topic(active_ros2_action_clients, action_client_nums, false,
+                             it->first.c_str(), "/_action/status", it->second.c_str(),
+                             "GoalStatusArray")) {
+            continue;
+        }
+    }
+    for (it_num = action_client_nums.begin(); it_num != action_client_nums.end(); it_num++) {
+      printf("%d", it_num->second);
+        if (it_num->second != 2) {
+            active_ros2_action_clients.erase(it_num->first);
+        }
+    }
+    for (it_num = action_server_nums.begin(); it_num != action_server_nums.end(); it_num++) {
+        if (it_num->second != 2) {
+            active_ros2_action_servers.erase(it_num->first);
+        }
+    }
+    for (it = active_ros2_action_servers.begin(); it != active_ros2_action_servers.end(); it++) {
+        printf("ROS2 action server: %s %s\n", it->first.c_str(), it->second.c_str());
+    }
+    for (it = active_ros2_action_clients.begin(); it != active_ros2_action_clients.end(); it++) {
+        printf("ROS2 action client: %s %s\n", it->first.c_str(), it->second.c_str());
+    }
+}
+
 int main(int argc, char * argv[])
 {
   bool output_topic_introspection;
@@ -871,6 +921,10 @@ int main(int argc, char * argv[])
           active_ros2_services[service_name]["name"] = service_type_srv_name;
         }
       }
+
+      std::map<std::string, std::string> active_ros2_action_servers, active_ros2_action_clients;
+      get_active_ros2_actions(current_ros2_publishers, current_ros2_subscribers,
+                              active_ros2_action_servers, active_ros2_action_clients);
 
       {
         std::lock_guard<std::mutex> lock(g_bridge_mutex);
