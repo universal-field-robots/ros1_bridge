@@ -763,12 +763,17 @@ def determine_common_services(
                 ros2_type = str(ros2_fields[direction][i].type)
                 ros1_name = ros1_field[1]
                 ros2_name = ros2_fields[direction][i].name
-                if ros1_type != ros2_type or ros1_name != ros2_name:
-                    # if the message types have a custom mapping their names
-                    # might not be equal, therefore check the message pairs
-                    if (ros1_type, ros2_type) not in message_string_pairs:
-                        match = False
-                        break
+                if ros1_name != ros2_name:
+                    #if the names do not match, check first if the types are builtin
+                    ros1_is_buildin = genmsg.msgs.is_builtin(genmsg.msgs.bare_msg_type(ros1_type))
+                    ros2_is_buildin = ros2_fields[direction][i].type.is_primitive_type()
+                    # Check if types are primitive types
+                    if not ros1_is_buildin or not ros1_is_buildin or ros1_type != ros2_type:
+                        # if the message types have a custom mapping their names
+                        # might not be equal, therefore check the message pairs
+                        if (ros1_type, ros2_type) not in message_string_pairs and not ros2_type.startswith("builtin_interfaces"):
+                            match = False
+                            break
                 output[direction].append({
                     'basic': False if '/' in ros1_type else True,
                     'array': True if '[]' in ros1_type else False,
