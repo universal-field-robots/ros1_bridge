@@ -151,8 +151,10 @@ void update_bridge(
   std::map<std::string, Bridge2to1HandlesAndMessageTypes> & bridges_2to1,
   std::map<std::string, ros1_bridge::ServiceBridge1to2> & service_bridges_1_to_2,
   std::map<std::string, ros1_bridge::ServiceBridge2to1> & service_bridges_2_to_1,
-  std::map<std::string, std::unique_ptr<ros1_bridge::ActionFactoryInterface>> & action_bridges_1_to_2,
-  std::map<std::string, std::unique_ptr<ros1_bridge::ActionFactoryInterface>> & action_bridges_2_to_1,
+  std::map<std::string,
+  std::unique_ptr<ros1_bridge::ActionFactoryInterface>> & action_bridges_1_to_2,
+  std::map<std::string,
+  std::unique_ptr<ros1_bridge::ActionFactoryInterface>> & action_bridges_2_to_1,
   bool bridge_all_1to2_topics, bool bridge_all_2to1_topics)
 {
   std::lock_guard<std::mutex> lock(g_bridge_mutex);
@@ -569,9 +571,12 @@ inline bool is_action_topic(
     // action type is 'Fibonacci'
     if (!type.empty() && is_action_type) {
       std::string pkg_name = type.substr(0, type.find("/"));
-      std::string action_type = type.substr(type.find_last_of("/") + 1, type.length() - (type.find_last_of("/") + type_ends_with.length() + 1));
+      std::string action_type =
+        type.substr(
+        type.find_last_of("/") + 1,
+        type.length() - (type.find_last_of("/") + type_ends_with.length() + 1));
       actions[name]["package"] = pkg_name;
-      if(is_ros2) {
+      if (is_ros2) {
         actions[name]["type"] = "action/" + action_type;
       } else {
         actions[name]["type"] = action_type;
@@ -889,7 +894,8 @@ int main(int argc, char * argv[])
       }
 
       // check actions
-      std::map<std::string, std::map<std::string, std::string>> active_ros1_action_servers, active_ros1_action_clients;
+      std::map<std::string, std::map<std::string, std::string>> active_ros1_action_servers,
+        active_ros1_action_clients;
       get_active_ros1_actions(
         current_ros1_publishers, current_ros1_subscribers,
         active_ros1_action_servers, active_ros1_action_clients);
@@ -1066,7 +1072,8 @@ int main(int argc, char * argv[])
         }
       }
 
-      std::map<std::string, std::map<std::string, std::string>> active_ros2_action_servers, active_ros2_action_clients;
+      std::map<std::string, std::map<std::string, std::string>> active_ros2_action_servers,
+        active_ros2_action_clients;
       get_active_ros2_actions(
         current_ros2_publishers, current_ros2_subscribers,
         active_ros2_action_servers, active_ros2_action_clients);
